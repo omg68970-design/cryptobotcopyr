@@ -68,23 +68,24 @@
         }
         .val { color: #ffffff; font-weight: 600; }
         .val-highlight { color: #38bdf8; font-weight: 800; font-size: 18px; }
+        .val-profit { color: #4ade80; font-weight: 800; font-size: 18px; }
         
         .btn-action {
             color: #ffffff;
             border: none;
             width: 100%;
-            padding: 15px;
+            padding: 16px;
             border-radius: 12px;
             font-size: 16px;
-            font-weight: 700;
+            font-weight: 800;
             cursor: pointer;
             display: block;
             text-align: center;
             margin-top: 10px;
+            transition: 0.2s;
         }
-        .btn-buy-color { background: #22c55e; }
-        .btn-sell-color { background: #ef4444; }
-        .btn-wallet { background: #0500FF; }
+        .btn-buy-color { background: #22c55e; box-shadow: 0 4px 15px rgba(34,197,94,0.3); }
+        .btn-sell-color { background: #ef4444; box-shadow: 0 4px 15px rgba(239,68,68,0.3); }
         
         .btn-sim {
             background: #1e293b;
@@ -113,7 +114,7 @@
             <div style="font-size: 11px; color: #64748b;">Сигнал трейдера:</div>
             <div class="trader-name" id="trader-alias">Инфлюенсер</div>
         </div>
-        <div class="badge" id="action-badge">ПОКУПКА</div>
+        <div class="badge" id="action-badge">...</div>
     </div>
 
     <div class="deal-box">
@@ -122,17 +123,17 @@
             <span class="val" id="token-name">PEPE</span>
         </div>
         <div class="row">
-            <span id="amount-label">Сумма входа:</span>
-            <span class="val" id="pay-eth">0.05 ETH</span>
+            <span id="amount-label">Сумма сделки:</span>
+            <span class="val" id="pay-eth">...</span>
         </div>
         <div class="row total">
-            <span id="receive-label">Количество:</span>
-            <span class="val-highlight" id="token-receive">15,000,000 PEPE</span>
+            <span id="receive-label">Итог:</span>
+            <span id="token-receive" class="val-highlight">...</span>
         </div>
     </div>
 
-    <!-- КНОПКА ОТКРЫТИЯ В TRUST WALLET / METAMASK (Через Telegram OpenLink) -->
-    <button id="main-btn" class="btn-action btn-wallet" onclick="openWalletApp()">🛡 Открыть в Trust Wallet</button>
+    <!-- КНОПКА ДЕЙСТВИЯ -->
+    <button id="main-btn" class="btn-action" onclick="openWalletApp()">Загрузка...</button>
     <button class="btn-sim" onclick="executeSimulation()">🧪 Тестовая симуляция (в 1 клик)</button>
 
     <div class="fees" id="fees-info">🛡 Сплит комиссии 15% трейдеру / 15% платформе</div>
@@ -143,7 +144,7 @@
     if (tg) tg.expand();
 
     const urlParams = new URLSearchParams(window.location.search);
-    const action = urlParams.get('action') || 'BUY'; // BUY или SELL
+    const action = urlParams.get('action') || 'BUY';
     const traderName = urlParams.get('trader') || 'Инфлюенсер';
     const tokenName = urlParams.get('name') || 'PEPE';
     const tokenAddr = urlParams.get('token') || '0x6982508145454Ce325dDbE47a25d4ec3d2311933';
@@ -152,34 +153,54 @@
 
     document.getElementById('trader-alias').innerText = traderName;
     document.getElementById('token-name').innerText = tokenName;
-    document.getElementById('pay-eth').innerText = `${ethAmount} ETH`;
-    document.getElementById('token-receive').innerText = `${tokensAmount} ${tokenName}`;
 
     const badge = document.getElementById('action-badge');
     const mainBtn = document.getElementById('main-btn');
+    const receiveVal = document.getElementById('token-receive');
 
     if (action === 'SELL') {
-        badge.innerText = "ПРОДАЖА (ВЫХОД)";
+        // НАСТРОЙКА ДЛЯ ВЫВОДА / ПРОДАЖИ
+        badge.innerText = "🔴 ПРОДАЖА / ВЫВОД";
         badge.className = "badge badge-sell";
-        mainBtn.innerText = `🔴 Продать ${tokenName} и забрать ETH`;
+        
+        document.getElementById('amount-label').innerText = "Продаем токенов:";
+        document.getElementById('pay-eth').innerText = `${tokensAmount} ${tokenName}`;
+        
+        document.getElementById('receive-label').innerText = "Выплата на кошелек:";
+        receiveVal.innerText = `+${ethAmount} ETH`;
+        receiveVal.className = "val-profit";
+
+        mainBtn.innerText = `🔴 ВЫВЕСТИ +${ethAmount} ETH НА КОШЕЛЕК`;
         mainBtn.className = "btn-action btn-sell-color";
-        document.getElementById('amount-label').innerText = "К выплате:";
-        document.getElementById('receive-label').innerText = "Продаем:";
     } else {
-        badge.innerText = "ПОКУПКА";
+        // НАСТРОЙКА ДЛЯ ПОКУПКИ
+        badge.innerText = "🟢 ПОКУПКА";
         badge.className = "badge badge-buy";
-        mainBtn.innerText = `🟢 Купить ${tokenName} через Trust Wallet`;
+        
+        document.getElementById('amount-label').innerText = "Сумма входа:";
+        document.getElementById('pay-eth').innerText = `${ethAmount} ETH`;
+        
+        document.getElementById('receive-label').innerText = "Получаете:";
+        receiveVal.innerText = `${tokensAmount} ${tokenName}`;
+        receiveVal.className = "val-highlight";
+
+        mainBtn.innerText = `🟢 КУПИТЬ ${tokenName} (Trust Wallet)`;
         mainBtn.className = "btn-action btn-buy-color";
     }
 
-    // Правильное открытие кошелька из Telegram WebApp
     function openWalletApp() {
-        // Ссылка на декс Uniswap с предзаполненным токеном
-        const dexUrl = `https://app.uniswap.org/#/swap?outputCurrency=${tokenAddr}`;
+        let dexUrl = "";
+        if (action === 'SELL') {
+            // Для продажи: меняем токен обратно на ETH
+            dexUrl = `https://app.uniswap.org/#/swap?inputCurrency=${tokenAddr}&outputCurrency=ETH`;
+        } else {
+            // Для покупки: меняем ETH на токен
+            dexUrl = `https://app.uniswap.org/#/swap?outputCurrency=${tokenAddr}`;
+        }
+
         const trustDeepLink = `https://link.trustwallet.com/open_url?coin_id=60&url=${encodeURIComponent(dexUrl)}`;
 
         if (tg && tg.openLink) {
-            // Используем официальный метод Telegram для внешних приложений
             tg.openLink(trustDeepLink);
         } else {
             window.location.href = trustDeepLink;
@@ -188,9 +209,9 @@
 
     function executeSimulation() {
         if (action === 'SELL') {
-            alert(`✅ ПРОДАЖА УСПЕШНА!\n\nПродано: ${tokensAmount} ${tokenName}\nПолучено на кошелек: +${ethAmount} ETH\nКомиссия 15/15 автоматически распределена.`);
+            alert(`🎉 СРЕДСТВА ВЫВЕДЕНЫ!\n\nПродано: ${tokensAmount} ${tokenName}\nНачислено на кошелек: +${ethAmount} ETH\nКомиссия 15% инфлюенсеру и 15% сервису выплачена.`);
         } else {
-            alert(`✅ ПОКУПКА УСПЕШНА!\n\nКуплено: ${tokensAmount} ${tokenName}\nСумма: ${ethAmount} ETH\nStop-Loss активен.`);
+            alert(`✅ ПОКУПКА УСПЕШНА!\n\nКуплено: ${tokensAmount} ${tokenName}\nСписано: ${ethAmount} ETH\nStop-Loss активен.`);
         }
         if (tg) tg.close();
     }
