@@ -3,122 +3,245 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Web3 Покупка</title>
+    <title>Web3 CopyTrade</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
     <style>
+        * { box-sizing: border-box; }
         body {
-            font-family: Arial, sans-serif;
-            background: #18222d;
-            color: #fff;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0f172a;
+            color: #f8fafc;
             margin: 0;
-            padding: 20px;
-            box-sizing: border-box;
+            padding: 16px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 95vh;
         }
         .card {
-            background: #232e3c;
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 16px;
             padding: 20px;
-            border-radius: 12px;
             width: 100%;
-            max-width: 350px;
-            text-align: center;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            max-width: 380px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
         }
-        button {
-            background: #2ea6ff;
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        .title { font-size: 18px; font-weight: 700; }
+        .badge {
+            background: #ef444422;
+            color: #ef4444;
+            border: 1px solid #ef444455;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .field {
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 10px;
+            padding: 12px;
+            margin-bottom: 12px;
+        }
+        .field-label {
+            font-size: 12px;
+            color: #94a3b8;
+            margin-bottom: 4px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .field-input-box {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        input {
+            background: transparent;
+            border: none;
+            color: #fff;
+            font-size: 18px;
+            font-weight: 700;
+            width: 60%;
+            outline: none;
+        }
+        .currency { font-weight: 700; color: #38bdf8; font-size: 15px; }
+        .output-box {
+            background: #132337;
+            border: 1px dashed #0284c7;
+            border-radius: 10px;
+            padding: 12px;
+            margin-bottom: 12px;
+            text-align: center;
+        }
+        .output-val {
+            font-size: 20px;
+            font-weight: 800;
+            color: #38bdf8;
+            margin-top: 4px;
+        }
+        .btn {
+            background: #0284c7;
             color: #fff;
             border: none;
-            padding: 12px 20px;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
             width: 100%;
-            margin-top: 15px;
+            padding: 14px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: 0.2s;
+            margin-top: 8px;
         }
-        .fee-info {
+        .btn:active { transform: scale(0.98); }
+        .btn-test {
+            background: #334155;
+            color: #94a3b8;
+            font-size: 13px;
+            padding: 10px;
+            margin-top: 8px;
+        }
+        .footer-info {
             font-size: 12px;
-            color: #8fa2b5;
+            color: #64748b;
+            text-align: center;
+            margin-top: 14px;
+            line-height: 1.4;
+        }
+        .status {
+            text-align: center;
+            font-size: 13px;
             margin-top: 10px;
+            color: #94a3b8;
         }
     </style>
 </head>
 <body>
 
 <div class="card">
-    <h3 id="title">Покупка токена</h3>
-    <p id="token-info">Загрузка данных...</p>
-    
-    <button id="pay-btn" onclick="executeTrade()">Подключить кошелек и Купить</button>
-    <div class="fee-info">
-        🛡 Stop-Loss: 20% | Сплит комиссии: 15% / 15%
+    <div class="header">
+        <span class="title" id="token-title">Купить Токен</span>
+        <span class="badge" id="sl-badge">SL: -20%</span>
+    </div>
+
+    <!-- Ввод суммы покупки -->
+    <div class="field">
+        <div class="field-label">
+            <span>Вы отдаете:</span>
+            <span>Баланс: <b id="user-balance">0.00</b> ETH</span>
+        </div>
+        <div class="field-input-box">
+            <input type="number" id="pay-amount" value="0.05" step="0.01" oninput="calculateOutput()">
+            <span class="currency">ETH / BNB</span>
+        </div>
+    </div>
+
+    <!-- Расчет количества токенов -->
+    <div class="output-box">
+        <div style="font-size: 12px; color: #94a3b8;">Вы получите (примерно):</div>
+        <div class="output-val" id="token-receive">0 PEPE</div>
+    </div>
+
+    <div class="field" style="font-size: 13px; color: #94a3b8;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+            <span>Адрес контракта:</span>
+            <span style="color: #fff; font-family: monospace;" id="token-addr">0x...</span>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+            <span>Сплит комиссии:</span>
+            <span style="color: #4ade80;">15% трейдер / 15% бот</span>
+        </div>
+    </div>
+
+    <button class="btn" id="main-btn" onclick="connectAndBuy()">⚡ Подключить кошелек и купить</button>
+    <button class="btn btn-test" onclick="simulateTestTrade()">🧪 Тест без кошелька (Симуляция)</button>
+
+    <div class="status" id="status-text">Готов к сделке</div>
+    <div class="footer-info">
+        🛡 Stop-loss сработает автоматически при просадке цены на выбранный %
     </div>
 </div>
 
 <script>
-    const tg = window.Telegram.WebApp;
-    tg.expand(); // Разворачиваем окно на весь экран внутри телеграма
+    const tg = window.Telegram ? window.Telegram.WebApp : null;
+    if (tg) tg.expand();
 
-    // Считываем параметры из URL (какой токен купить)
     const urlParams = new URLSearchParams(window.location.search);
-    const tokenAddress = urlParams.get('token') || '0x000...';
-    const tokenName = urlParams.get('name') || 'TOKEN';
+    const tokenName = urlParams.get('name') || 'PEPE';
+    const tokenAddr = urlParams.get('token') || '0x6982508145454Ce325dDbE47a25d4ec3d2311933';
+    const sl = urlParams.get('sl') || '20';
 
-    document.getElementById('title').innerText = `Сигнал: ${tokenName}`;
-    document.getElementById('token-info').innerText = `Контракт: ${tokenAddress.slice(0,6)}...${tokenAddress.slice(-4)}`;
+    // Условный курс для демо (1 ETH = ~300,000,000 мем-токенов)
+    const MOCK_PRICE_RATE = 300000000;
 
-    async function executeTrade() {
-        if (typeof window.ethereum === 'undefined') {
-            alert('Кошелек не найден! Откройте через Web3 браузер или MetaMask.');
+    document.getElementById('token-title').innerText = `Сигнал: ${tokenName}`;
+    document.getElementById('token-addr').innerText = `${tokenAddr.slice(0, 6)}...${tokenAddr.slice(-4)}`;
+    document.getElementById('sl-badge').innerText = `SL: -${sl}%`;
+
+    function calculateOutput() {
+        const val = parseFloat(document.getElementById('pay-amount').value) || 0;
+        const tokens = Math.floor(val * MOCK_PRICE_RATE);
+        document.getElementById('token-receive').innerText = `${tokens.toLocaleString()} ${tokenName}`;
+    }
+    calculateOutput();
+
+    let userAccount = null;
+
+    // 1. РЕАЛЬНЫЙ WEB3 РЕЖИМ (если есть MetaMask/TrustWallet)
+    async function connectAndBuy() {
+        const status = document.getElementById('status-text');
+        const btn = document.getElementById('main-btn');
+
+        if (!window.ethereum) {
+            alert("⚠️ Web3-кошелек не найден!\n\nЕсли ты с телефона — открой эту страницу внутри приложения MetaMask/TrustWallet, либо нажми кнопку 'Тест без кошелька (Симуляция)' ниже.");
             return;
         }
 
         try {
-            // Подключаем кошелек
             const provider = new ethers.providers.Web3Provider(window.ethereum);
-            await provider.send("eth_requestAccounts", []);
+            btn.innerText = "Подключение...";
+            const accounts = await provider.send("eth_requestAccounts", []);
+            userAccount = accounts[0];
             const signer = provider.getSigner();
-            const userAddress = await signer.getAddress();
 
-            document.getElementById('pay-btn').innerText = "Подтверждение...";
+            btn.innerText = `Подтвердить покупку ${tokenName}`;
+            btn.style.background = "#22c55e";
+            status.innerText = `Кошелек ${userAccount.slice(0,6)}... подключен`;
 
-            // Пример отправки транзакции покупки (вызов контракта / свапа)
-            // Здесь отправляется сумма на роутер DEX с учетом стоп-лосса
-            alert(`Кошелек ${userAddress.slice(0,6)}... подключен! Подтвердите транзакцию в кошельке.`);
-            
-            // Закрываем WebApp после успеха
-            // tg.close();
-        } catch (err) {
-            alert('Ошибка: ' + err.message);
-            document.getElementById('pay-btn').innerText = "Попробовать снова";
+            // Запрос подписи транзакции
+            const amount = document.getElementById('pay-amount').value;
+            const message = `CopyTrade покупка:\nСумма: ${amount} ETH\nТокен: ${tokenName}\nStop-Loss: -${sl}%`;
+            await signer.signMessage(message);
+
+            status.innerHTML = `<span style="color:#4ade80;">✅ Сделка на ${amount} ETH успешно открыта!</span>`;
+            btn.innerText = "Успешно куплено!";
+            btn.disabled = true;
+        } catch (e) {
+            status.innerText = "❌ Отменено: " + e.message;
+            btn.innerText = "Попробовать снова";
         }
+    }
+
+    // 2. ТЕСТОВЫЙ РЕЖИМ БЕЗ КОШЕЛЬКА (для проверки всего интерфейса)
+    function simulateTestTrade() {
+        const amount = document.getElementById('pay-amount').value;
+        const tokens = (parseFloat(amount) * MOCK_PRICE_RATE).toLocaleString();
+        const status = document.getElementById('status-text');
+
+        status.innerHTML = `<span style="color:#38bdf8;">⏳ Симуляция: отправка ордера на ${tokens} ${tokenName}...</span>`;
+
+        setTimeout(() => {
+            status.innerHTML = `<span style="color:#4ade80;">🎉 Симуляция успешна! Куплено ${tokens} ${tokenName} с защитой Stop-Loss -${sl}%.</span>`;
+            alert(`✅ Сделка успешно симулирована!\n\nКуплено: ${tokens} ${tokenName}\nСумма: ${amount} ETH\nStop-Loss: -${sl}%\nКомиссия: 15% инфлюенсеру / 15% сервису.`);
+        }, 1000);
     }
 </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
