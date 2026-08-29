@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CopyTrade 1-Click</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
     <style>
         * { box-sizing: border-box; }
         body {
@@ -36,11 +35,7 @@
             padding-bottom: 12px;
             border-bottom: 1px solid #233044;
         }
-        .trader-name {
-            font-size: 14px;
-            color: #38bdf8;
-            font-weight: 600;
-        }
+        .trader-name { font-size: 15px; color: #38bdf8; font-weight: 700; }
         .badge-sl {
             background: #ef444422;
             color: #ef4444;
@@ -72,29 +67,26 @@
             color: #ffffff;
             font-weight: bold;
         }
-        .val {
-            color: #ffffff;
-            font-weight: 600;
-        }
-        .val-highlight {
-            color: #38bdf8;
-            font-weight: 800;
-            font-size: 18px;
-        }
-        .btn-buy {
-            background: #22c55e;
+        .val { color: #ffffff; font-weight: 600; }
+        .val-highlight { color: #38bdf8; font-weight: 800; font-size: 18px; }
+        
+        .btn-wallet {
+            background: #0500FF;
             color: #ffffff;
             border: none;
             width: 100%;
-            padding: 16px;
+            padding: 14px;
             border-radius: 12px;
-            font-size: 17px;
-            font-weight: 800;
+            font-size: 16px;
+            font-weight: 700;
             cursor: pointer;
-            transition: 0.2s;
-            box-shadow: 0 4px 15px rgba(34, 197, 94, 0.3);
+            text-decoration: none;
+            display: block;
+            text-align: center;
+            margin-top: 10px;
         }
-        .btn-buy:active { transform: scale(0.98); }
+        .btn-trust { background: #0500FF; }
+        .btn-metamask { background: #f6851b; }
         .btn-sim {
             background: #1e293b;
             color: #94a3b8;
@@ -104,19 +96,13 @@
             border-radius: 8px;
             font-size: 13px;
             cursor: pointer;
-            margin-top: 8px;
-        }
-        .status {
-            text-align: center;
-            font-size: 13px;
-            margin-top: 12px;
-            color: #94a3b8;
+            margin-top: 10px;
         }
         .fees {
             font-size: 11px;
             color: #64748b;
             text-align: center;
-            margin-top: 12px;
+            margin-top: 14px;
         }
     </style>
 </head>
@@ -125,16 +111,15 @@
 <div class="card">
     <div class="header">
         <div>
-            <div style="font-size: 11px; color: #64748b;">Копирование сделки:</div>
-            <div class="trader-name" id="trader-alias">Трейдер</div>
+            <div style="font-size: 11px; color: #64748b;">Сигнал трейдера:</div>
+            <div class="trader-name" id="trader-alias">Инфлюенсер</div>
         </div>
         <div class="badge-sl" id="sl-badge">SL: -20%</div>
     </div>
 
-    <!-- ВСЕ ДАННЫЕ УЖЕ ПОДСТАВЛЕНЫ -->
     <div class="deal-box">
         <div class="row">
-            <span>Покупка токена:</span>
+            <span>Токен:</span>
             <span class="val" id="token-name">PEPE</span>
         </div>
         <div class="row">
@@ -145,25 +130,21 @@
             <span>Получаете:</span>
             <span class="val-highlight" id="token-receive">15,000,000 PEPE</span>
         </div>
-        <div class="row" style="margin-top: 6px; font-size: 12px;">
-            <span>Контракт:</span>
-            <span class="val" style="font-family: monospace; color: #64748b;" id="token-addr">0x...</span>
-        </div>
     </div>
 
-    <!-- ОДНА КНОПКА ДЕЙСТВИЯ -->
-    <button class="btn-buy" id="main-btn" onclick="executeOneClickTrade()">⚡ ПОДТВЕРДИТЬ ПОКУПКУ</button>
-    <button class="btn-sim" onclick="executeSimulation()">🧪 Тестовое исполнение (без кошелька)</button>
+    <!-- КНОПКИ ДЛЯ ОТКРЫТИЯ КОШЕЛЬКОВ НАПРЯМУЮ -->
+    <a id="trust-btn" href="#" class="btn-wallet btn-trust" target="_blank">🛡 Оплатить через Trust Wallet</a>
+    <a id="metamask-btn" href="#" class="btn-wallet btn-metamask" target="_blank" style="margin-top: 8px;">🦊 Оплатить через MetaMask</a>
+    
+    <button class="btn-sim" onclick="executeSimulation()">🧪 Тестовая симуляция (без кошелька)</button>
 
-    <div class="status" id="status-text">Ожидание подтверждения</div>
-    <div class="fees">🛡 Сплит комиссии 15% трейдеру / 15% платформе заложен в контракт</div>
+    <div class="fees">🛡 Сплит комиссии 15% трейдеру / 15% платформе</div>
 </div>
 
 <script>
     const tg = window.Telegram ? window.Telegram.WebApp : null;
     if (tg) tg.expand();
 
-    // Автоматическое считывание всех параметров из URL
     const urlParams = new URLSearchParams(window.location.search);
     const traderName = urlParams.get('trader') || 'Инфлюенсер';
     const tokenName = urlParams.get('name') || 'PEPE';
@@ -176,54 +157,15 @@
     document.getElementById('token-name').innerText = tokenName;
     document.getElementById('pay-eth').innerText = `${ethAmount} ETH`;
     document.getElementById('token-receive').innerText = `${tokensAmount} ${tokenName}`;
-    document.getElementById('token-addr').innerText = `${tokenAddr.slice(0, 6)}...${tokenAddr.slice(-4)}`;
     document.getElementById('sl-badge').innerText = `SL: -${sl}%`;
 
-    // 1. Исполнение в 1 клик через Web3
-    async function executeOneClickTrade() {
-        const btn = document.getElementById('main-btn');
-        const status = document.getElementById('status-text');
+    // Генерация прямых Deep-Link ссылок для открытия приложений кошельков на телефоне
+    const currentUrl = window.location.href;
+    document.getElementById('trust-btn').href = `https://link.trustwallet.com/open_url?coin_id=60&url=${encodeURIComponent(currentUrl)}`;
+    document.getElementById('metamask-btn').href = `https://metamask.app.link/dapp/${window.location.host}${window.location.pathname}${window.location.search}`;
 
-        if (!window.ethereum) {
-            alert("Web3-кошелек не обнаружен. Нажмите 'Тестовое исполнение' ниже для проверки.");
-            return;
-        }
-
-        try {
-            btn.innerText = "Подтверждение в кошельке...";
-            const provider = new ethers.providers.Web3Provider(window.ethereum);
-            await provider.send("eth_requestAccounts", []);
-            const signer = provider.getSigner();
-
-            const message = `CopyTrade 1-Click:\nТрейдер: ${traderName}\nПокупка: ${tokensAmount} ${tokenName}\nСумма: ${ethAmount} ETH\nStop-Loss: -${sl}%`;
-            await signer.signMessage(message);
-
-            btn.innerText = "✅ КУПЛЕНО!";
-            btn.style.background = "#0284c7";
-            status.innerHTML = `<span style="color:#4ade80;">Ордер исполнен! Stop-Loss -${sl}% активен.</span>`;
-            
-            setTimeout(() => { if (tg) tg.close(); }, 1500);
-        } catch (e) {
-            btn.innerText = "⚡ ПОДТВЕРДИТЬ ПОКУПКУ";
-            status.innerText = "❌ Отклонено: " + (e.message || "Ошибка");
-        }
-    }
-
-    // 2. Симуляция исполнения в 1 клик
     function executeSimulation() {
-        const btn = document.getElementById('main-btn');
-        const status = document.getElementById('status-text');
-
-        btn.innerText = "Исполнение ордера...";
-        status.innerHTML = `<span style="color:#38bdf8;">⏳ Отправка транзакции в пул...</span>`;
-
-        setTimeout(() => {
-            btn.innerText = "✅ КУПЛЕНО!";
-            btn.style.background = "#0284c7";
-            btn.disabled = true;
-            status.innerHTML = `<span style="color:#4ade80;">🎉 Успешно куплено ${tokensAmount} ${tokenName}! Stop-Loss -${sl}%.</span>`;
-            alert(`✅ Сделка исполнена в 1 клик!\n\nТокен: ${tokensAmount} ${tokenName}\nСумма: ${ethAmount} ETH\nStop-Loss: -${sl}%`);
-        }, 800);
+        alert(`✅ Сделка исполнена!\n\nКуплено: ${tokensAmount} ${tokenName}\nСумма: ${ethAmount} ETH\nStop-Loss: -${sl}%\nКомиссия 15/15 списана.`);
     }
 </script>
 </body>
