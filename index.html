@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web3 Покупка</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #18222d;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .card {
+            background: #232e3c;
+            padding: 20px;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 350px;
+            text-align: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+        button {
+            background: #2ea6ff;
+            color: #fff;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 15px;
+        }
+        .fee-info {
+            font-size: 12px;
+            color: #8fa2b5;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h3 id="title">Покупка токена</h3>
+    <p id="token-info">Загрузка данных...</p>
+    
+    <button id="pay-btn" onclick="executeTrade()">Подключить кошелек и Купить</button>
+    <div class="fee-info">
+        🛡 Stop-Loss: 20% | Сплит комиссии: 15% / 15%
+    </div>
+</div>
+
+<script>
+    const tg = window.Telegram.WebApp;
+    tg.expand(); // Разворачиваем окно на весь экран внутри телеграма
+
+    // Считываем параметры из URL (какой токен купить)
+    const urlParams = new URLSearchParams(window.location.search);
+    const tokenAddress = urlParams.get('token') || '0x000...';
+    const tokenName = urlParams.get('name') || 'TOKEN';
+
+    document.getElementById('title').innerText = `Сигнал: ${tokenName}`;
+    document.getElementById('token-info').innerText = `Контракт: ${tokenAddress.slice(0,6)}...${tokenAddress.slice(-4)}`;
+
+    async function executeTrade() {
+        if (typeof window.ethereum === 'undefined') {
+            alert('Кошелек не найден! Откройте через Web3 браузер или MetaMask.');
+            return;
+        }
+
+        try {
+            // Подключаем кошелек
+            const provider = new ethers.providers.Web3Provider(window.ethereum);
+            await provider.send("eth_requestAccounts", []);
+            const signer = provider.getSigner();
+            const userAddress = await signer.getAddress();
+
+            document.getElementById('pay-btn').innerText = "Подтверждение...";
+
+            // Пример отправки транзакции покупки (вызов контракта / свапа)
+            // Здесь отправляется сумма на роутер DEX с учетом стоп-лосса
+            alert(`Кошелек ${userAddress.slice(0,6)}... подключен! Подтвердите транзакцию в кошельке.`);
+            
+            // Закрываем WebApp после успеха
+            // tg.close();
+        } catch (err) {
+            alert('Ошибка: ' + err.message);
+            document.getElementById('pay-btn').innerText = "Попробовать снова";
+        }
+    }
+</script>
+</body>
+</html>
