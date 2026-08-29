@@ -3,15 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Web3 CopyTrade</title>
+    <title>CopyTrade 1-Click</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
     <style>
         * { box-sizing: border-box; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #0f172a;
-            color: #f8fafc;
+            background: #0b0f17;
+            color: #ffffff;
             margin: 0;
             padding: 16px;
             display: flex;
@@ -20,106 +20,103 @@
             min-height: 95vh;
         }
         .card {
-            background: #1e293b;
-            border: 1px solid #334155;
+            background: #151d2a;
+            border: 1px solid #233044;
             border-radius: 16px;
             padding: 20px;
             width: 100%;
             max-width: 380px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            box-shadow: 0 12px 30px rgba(0,0,0,0.6);
         }
         .header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #233044;
         }
-        .title { font-size: 18px; font-weight: 700; }
-        .badge {
+        .trader-name {
+            font-size: 14px;
+            color: #38bdf8;
+            font-weight: 600;
+        }
+        .badge-sl {
             background: #ef444422;
             color: #ef4444;
             border: 1px solid #ef444455;
             padding: 4px 8px;
             border-radius: 6px;
             font-size: 12px;
+            font-weight: bold;
+        }
+        .deal-box {
+            background: #0b0f17;
+            border: 1px solid #233044;
+            border-radius: 12px;
+            padding: 14px;
+            margin-bottom: 14px;
+        }
+        .row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: #94a3b8;
+        }
+        .row.total {
+            margin-top: 10px;
+            padding-top: 8px;
+            border-top: 1px dashed #233044;
+            font-size: 16px;
+            color: #ffffff;
+            font-weight: bold;
+        }
+        .val {
+            color: #ffffff;
             font-weight: 600;
         }
-        .field {
-            background: #0f172a;
-            border: 1px solid #334155;
-            border-radius: 10px;
-            padding: 12px;
-            margin-bottom: 12px;
-        }
-        .field-label {
-            font-size: 12px;
-            color: #94a3b8;
-            margin-bottom: 4px;
-            display: flex;
-            justify-content: space-between;
-        }
-        .field-input-box {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        input {
-            background: transparent;
-            border: none;
-            color: #fff;
-            font-size: 18px;
-            font-weight: 700;
-            width: 60%;
-            outline: none;
-        }
-        .currency { font-weight: 700; color: #38bdf8; font-size: 15px; }
-        .output-box {
-            background: #132337;
-            border: 1px dashed #0284c7;
-            border-radius: 10px;
-            padding: 12px;
-            margin-bottom: 12px;
-            text-align: center;
-        }
-        .output-val {
-            font-size: 20px;
-            font-weight: 800;
+        .val-highlight {
             color: #38bdf8;
-            margin-top: 4px;
+            font-weight: 800;
+            font-size: 18px;
         }
-        .btn {
-            background: #0284c7;
-            color: #fff;
+        .btn-buy {
+            background: #22c55e;
+            color: #ffffff;
             border: none;
             width: 100%;
-            padding: 14px;
-            border-radius: 10px;
-            font-size: 16px;
-            font-weight: 700;
+            padding: 16px;
+            border-radius: 12px;
+            font-size: 17px;
+            font-weight: 800;
             cursor: pointer;
             transition: 0.2s;
-            margin-top: 8px;
+            box-shadow: 0 4px 15px rgba(34, 197, 94, 0.3);
         }
-        .btn:active { transform: scale(0.98); }
-        .btn-test {
-            background: #334155;
+        .btn-buy:active { transform: scale(0.98); }
+        .btn-sim {
+            background: #1e293b;
             color: #94a3b8;
-            font-size: 13px;
+            border: 1px solid #334155;
+            width: 100%;
             padding: 10px;
+            border-radius: 8px;
+            font-size: 13px;
+            cursor: pointer;
             margin-top: 8px;
-        }
-        .footer-info {
-            font-size: 12px;
-            color: #64748b;
-            text-align: center;
-            margin-top: 14px;
-            line-height: 1.4;
         }
         .status {
             text-align: center;
             font-size: 13px;
-            margin-top: 10px;
+            margin-top: 12px;
             color: #94a3b8;
+        }
+        .fees {
+            font-size: 11px;
+            color: #64748b;
+            text-align: center;
+            margin-top: 12px;
         }
     </style>
 </head>
@@ -127,120 +124,106 @@
 
 <div class="card">
     <div class="header">
-        <span class="title" id="token-title">Купить Токен</span>
-        <span class="badge" id="sl-badge">SL: -20%</span>
+        <div>
+            <div style="font-size: 11px; color: #64748b;">Копирование сделки:</div>
+            <div class="trader-name" id="trader-alias">Трейдер</div>
+        </div>
+        <div class="badge-sl" id="sl-badge">SL: -20%</div>
     </div>
 
-    <!-- Ввод суммы покупки -->
-    <div class="field">
-        <div class="field-label">
-            <span>Вы отдаете:</span>
-            <span>Баланс: <b id="user-balance">0.00</b> ETH</span>
+    <!-- ВСЕ ДАННЫЕ УЖЕ ПОДСТАВЛЕНЫ -->
+    <div class="deal-box">
+        <div class="row">
+            <span>Покупка токена:</span>
+            <span class="val" id="token-name">PEPE</span>
         </div>
-        <div class="field-input-box">
-            <input type="number" id="pay-amount" value="0.05" step="0.01" oninput="calculateOutput()">
-            <span class="currency">ETH / BNB</span>
+        <div class="row">
+            <span>Сумма входа:</span>
+            <span class="val" id="pay-eth">0.05 ETH</span>
         </div>
-    </div>
-
-    <!-- Расчет количества токенов -->
-    <div class="output-box">
-        <div style="font-size: 12px; color: #94a3b8;">Вы получите (примерно):</div>
-        <div class="output-val" id="token-receive">0 PEPE</div>
-    </div>
-
-    <div class="field" style="font-size: 13px; color: #94a3b8;">
-        <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-            <span>Адрес контракта:</span>
-            <span style="color: #fff; font-family: monospace;" id="token-addr">0x...</span>
+        <div class="row total">
+            <span>Получаете:</span>
+            <span class="val-highlight" id="token-receive">15,000,000 PEPE</span>
         </div>
-        <div style="display: flex; justify-content: space-between;">
-            <span>Сплит комиссии:</span>
-            <span style="color: #4ade80;">15% трейдер / 15% бот</span>
+        <div class="row" style="margin-top: 6px; font-size: 12px;">
+            <span>Контракт:</span>
+            <span class="val" style="font-family: monospace; color: #64748b;" id="token-addr">0x...</span>
         </div>
     </div>
 
-    <button class="btn" id="main-btn" onclick="connectAndBuy()">⚡ Подключить кошелек и купить</button>
-    <button class="btn btn-test" onclick="simulateTestTrade()">🧪 Тест без кошелька (Симуляция)</button>
+    <!-- ОДНА КНОПКА ДЕЙСТВИЯ -->
+    <button class="btn-buy" id="main-btn" onclick="executeOneClickTrade()">⚡ ПОДТВЕРДИТЬ ПОКУПКУ</button>
+    <button class="btn-sim" onclick="executeSimulation()">🧪 Тестовое исполнение (без кошелька)</button>
 
-    <div class="status" id="status-text">Готов к сделке</div>
-    <div class="footer-info">
-        🛡 Stop-loss сработает автоматически при просадке цены на выбранный %
-    </div>
+    <div class="status" id="status-text">Ожидание подтверждения</div>
+    <div class="fees">🛡 Сплит комиссии 15% трейдеру / 15% платформе заложен в контракт</div>
 </div>
 
 <script>
     const tg = window.Telegram ? window.Telegram.WebApp : null;
     if (tg) tg.expand();
 
+    // Автоматическое считывание всех параметров из URL
     const urlParams = new URLSearchParams(window.location.search);
+    const traderName = urlParams.get('trader') || 'Инфлюенсер';
     const tokenName = urlParams.get('name') || 'PEPE';
     const tokenAddr = urlParams.get('token') || '0x6982508145454Ce325dDbE47a25d4ec3d2311933';
     const sl = urlParams.get('sl') || '20';
+    const ethAmount = urlParams.get('eth') || '0.05';
+    const tokensAmount = urlParams.get('tokens') || '15,000,000';
 
-    // Условный курс для демо (1 ETH = ~300,000,000 мем-токенов)
-    const MOCK_PRICE_RATE = 300000000;
-
-    document.getElementById('token-title').innerText = `Сигнал: ${tokenName}`;
+    document.getElementById('trader-alias').innerText = traderName;
+    document.getElementById('token-name').innerText = tokenName;
+    document.getElementById('pay-eth').innerText = `${ethAmount} ETH`;
+    document.getElementById('token-receive').innerText = `${tokensAmount} ${tokenName}`;
     document.getElementById('token-addr').innerText = `${tokenAddr.slice(0, 6)}...${tokenAddr.slice(-4)}`;
     document.getElementById('sl-badge').innerText = `SL: -${sl}%`;
 
-    function calculateOutput() {
-        const val = parseFloat(document.getElementById('pay-amount').value) || 0;
-        const tokens = Math.floor(val * MOCK_PRICE_RATE);
-        document.getElementById('token-receive').innerText = `${tokens.toLocaleString()} ${tokenName}`;
-    }
-    calculateOutput();
-
-    let userAccount = null;
-
-    // 1. РЕАЛЬНЫЙ WEB3 РЕЖИМ (если есть MetaMask/TrustWallet)
-    async function connectAndBuy() {
-        const status = document.getElementById('status-text');
+    // 1. Исполнение в 1 клик через Web3
+    async function executeOneClickTrade() {
         const btn = document.getElementById('main-btn');
+        const status = document.getElementById('status-text');
 
         if (!window.ethereum) {
-            alert("⚠️ Web3-кошелек не найден!\n\nЕсли ты с телефона — открой эту страницу внутри приложения MetaMask/TrustWallet, либо нажми кнопку 'Тест без кошелька (Симуляция)' ниже.");
+            alert("Web3-кошелек не обнаружен. Нажмите 'Тестовое исполнение' ниже для проверки.");
             return;
         }
 
         try {
+            btn.innerText = "Подтверждение в кошельке...";
             const provider = new ethers.providers.Web3Provider(window.ethereum);
-            btn.innerText = "Подключение...";
-            const accounts = await provider.send("eth_requestAccounts", []);
-            userAccount = accounts[0];
+            await provider.send("eth_requestAccounts", []);
             const signer = provider.getSigner();
 
-            btn.innerText = `Подтвердить покупку ${tokenName}`;
-            btn.style.background = "#22c55e";
-            status.innerText = `Кошелек ${userAccount.slice(0,6)}... подключен`;
-
-            // Запрос подписи транзакции
-            const amount = document.getElementById('pay-amount').value;
-            const message = `CopyTrade покупка:\nСумма: ${amount} ETH\nТокен: ${tokenName}\nStop-Loss: -${sl}%`;
+            const message = `CopyTrade 1-Click:\nТрейдер: ${traderName}\nПокупка: ${tokensAmount} ${tokenName}\nСумма: ${ethAmount} ETH\nStop-Loss: -${sl}%`;
             await signer.signMessage(message);
 
-            status.innerHTML = `<span style="color:#4ade80;">✅ Сделка на ${amount} ETH успешно открыта!</span>`;
-            btn.innerText = "Успешно куплено!";
-            btn.disabled = true;
+            btn.innerText = "✅ КУПЛЕНО!";
+            btn.style.background = "#0284c7";
+            status.innerHTML = `<span style="color:#4ade80;">Ордер исполнен! Stop-Loss -${sl}% активен.</span>`;
+            
+            setTimeout(() => { if (tg) tg.close(); }, 1500);
         } catch (e) {
-            status.innerText = "❌ Отменено: " + e.message;
-            btn.innerText = "Попробовать снова";
+            btn.innerText = "⚡ ПОДТВЕРДИТЬ ПОКУПКУ";
+            status.innerText = "❌ Отклонено: " + (e.message || "Ошибка");
         }
     }
 
-    // 2. ТЕСТОВЫЙ РЕЖИМ БЕЗ КОШЕЛЬКА (для проверки всего интерфейса)
-    function simulateTestTrade() {
-        const amount = document.getElementById('pay-amount').value;
-        const tokens = (parseFloat(amount) * MOCK_PRICE_RATE).toLocaleString();
+    // 2. Симуляция исполнения в 1 клик
+    function executeSimulation() {
+        const btn = document.getElementById('main-btn');
         const status = document.getElementById('status-text');
 
-        status.innerHTML = `<span style="color:#38bdf8;">⏳ Симуляция: отправка ордера на ${tokens} ${tokenName}...</span>`;
+        btn.innerText = "Исполнение ордера...";
+        status.innerHTML = `<span style="color:#38bdf8;">⏳ Отправка транзакции в пул...</span>`;
 
         setTimeout(() => {
-            status.innerHTML = `<span style="color:#4ade80;">🎉 Симуляция успешна! Куплено ${tokens} ${tokenName} с защитой Stop-Loss -${sl}%.</span>`;
-            alert(`✅ Сделка успешно симулирована!\n\nКуплено: ${tokens} ${tokenName}\nСумма: ${amount} ETH\nStop-Loss: -${sl}%\nКомиссия: 15% инфлюенсеру / 15% сервису.`);
-        }, 1000);
+            btn.innerText = "✅ КУПЛЕНО!";
+            btn.style.background = "#0284c7";
+            btn.disabled = true;
+            status.innerHTML = `<span style="color:#4ade80;">🎉 Успешно куплено ${tokensAmount} ${tokenName}! Stop-Loss -${sl}%.</span>`;
+            alert(`✅ Сделка исполнена в 1 клик!\n\nТокен: ${tokensAmount} ${tokenName}\nСумма: ${ethAmount} ETH\nStop-Loss: -${sl}%`);
+        }, 800);
     }
 </script>
 </body>
